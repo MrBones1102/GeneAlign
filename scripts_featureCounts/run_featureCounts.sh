@@ -4,10 +4,11 @@
 THREADS=10
 
 #start conda environment
-conda activate rnaseq
+conda init --all
+conda activate rnaseq_featureCount
 
 #navigate to sra_out to prefetch
-cd ./sra_out
+cd ./salmon_gene_counts/sra_out
 
 #ask for single or paired end reads
 echo "Is this [single] end or [paired] end data?"
@@ -21,7 +22,7 @@ else
 	exit 1
 fi
 
-#loop through accession list, fetch samples and fastq format them
+#loop through accession_list.txt, fetch samples and fastq format them
 while IFS=read -r line; do
 	prefetch $line
 	if [ "$endType" = "single" ]; then

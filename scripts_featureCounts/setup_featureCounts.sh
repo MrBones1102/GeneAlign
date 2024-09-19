@@ -5,10 +5,10 @@ bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
 rm ~/miniconda3/miniconda.sh
 
 #create a new environment for RNAseq analysis
-canda create --name rnaseq
+canda create --name rnaseq_featureCount
 
 #activate the newly created environment
-conda activate rnaseq
+conda activate rnaseq_featureCount
 
 #add the required channels for packages, as required by bioconda
 conda config --add channels bioconda
