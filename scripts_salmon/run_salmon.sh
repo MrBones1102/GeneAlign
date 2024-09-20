@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#threads to use for processing
-THREADS=10
+echo "How many threads do you want to use?"
+read THREADS
 
 #start conda environment
 conda init --all
@@ -28,30 +28,37 @@ else
     exit 1
 fi
 
+#needed for a weird windows bug despite wsl. Windows appends a \r after each line in a txt file???
+sed -i 's/\r$//' accession_list.txt
+
 #loop through accession list, fetch samples and fastq format them
-while IFS="" read -r p || [ -n "$line"]; do
-    prefetch $line
+while IFS="" read -r line || [ -n "$line" ]; do
+    echo "Processing $line"
     if [ "$endType" = "single" ]; then
-        fasterq-dump $line
+        fasterq-dump $line --progress --threads $THREADS 
     elif [ "$endType" = "paired" ]; then
-        fasterq-dump --split-files --skip-technical $line
+        fasterq-dump $line --split-files --skip-technical --progress --threads $THREADS
     fi
 done < accession_list.txt
 
 #gzip all fastq files generated
-gzip *.fastq
+echo "Gzipping all fastq files"
+gzip --verbose *.fastq
 
 #navigate back to the main directory
 cd ..
 
 #quantify expression using salmon
 #loop through the fastq.gz files and quantify expression, checking for single or paired end reads
+echo "Quantifying expression with Salmon"
 if [ "$endType" = "single" ]; then
     for file in ./sra_out/*.fastq.gz; do
-        salmon quant -p $THREADS -i ./salmon_ref/salmon_index --geneMap ./salmon_ref/mappings.gtf --validateMappings -l A -r "$file" -o ./salmon_gene_counts/"$(basename "$file" .fastq.gz)"
+        echo "Processing $file"
+        salmon quant -p $THREADS -i ./salmon_ref/salmon_index --geneMap ./salmon_ref/mappings.gtf --validateMappings -l A -r ./sra_out/"$file" -o ./salmon_gene_counts/"$(basename "$file" .fastq.gz)"
     done
 elif [ "$endType" = "paired" ]; then
     for file in ./sra_out/*_1.fastq.gz; do
+        echo "Processing $file"
         base=$(basename "$file" _1.fastq.gz)
         salmon quant -p $THREADS -i ./salmon_ref/salmon_index --geneMap ./salmon_ref/mappings.gtf --validateMappings -l A -1 ./sra_out/"${base}_1.fastq.gz" -2 ./sra_out/"${base}_2.fastq.gz" -o ./salmon_gene_counts/"${base}"
     done
